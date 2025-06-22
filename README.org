@@ -7,12 +7,13 @@
 
 * Overview
 
-Claude Code IDE for Emacs provides seamless integration with Claude Code CLI. This package enables AI-powered code assistance directly within your Emacs workflow.
+Claude Code IDE for Emacs provides seamless integration with Claude Code CLI through the Model Context Protocol (MCP). This package enables AI-powered code assistance directly within your Emacs workflow.
 
 ** Features
 
 - Automatic project detection and session management
 - Terminal integration with full color support using =vterm=
+- MCP protocol implementation for IDE integration
 * Installation
 
 ** Prerequisites
