@@ -14,6 +14,7 @@ Claude Code IDE for Emacs provides seamless integration with Claude Code CLI thr
 - Automatic project detection and session management
 - Terminal integration with full color support using =vterm=
 - MCP protocol implementation for IDE integration
+- Tool support for file operations, editor state, and workspace info
 * Installation
 
 ** Prerequisites

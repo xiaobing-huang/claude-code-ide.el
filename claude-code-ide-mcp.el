@@ -35,6 +35,7 @@
 (require 'cl-lib)
 (require 'project)
 (require 'url-parse)
+(require 'claude-code-ide-mcp-handlers)
 
 ;;; Constants
 
@@ -201,12 +202,26 @@ Returns the session if found, nil otherwise."
    -32601
    (format "Method not found: %s" method)))
 
+(defun claude-code-ide-mcp--handle-tools-call (id params)
+  "Handle tools/call request with ID and PARAMS."
+  (let ((tool-name (alist-get 'name params))
+        (tool-params (alist-get 'arguments params)))
+    (condition-case err
+        (let ((result (claude-code-ide-mcp-handle-tool tool-name tool-params)))
+          (claude-code-ide-mcp--make-response id `((result . ,result))))
+      (error
+       (claude-code-ide-mcp--make-error-response
+        id
+        -32603
+        (format "Tool execution failed: %s" (error-message-string err)))))))
+
 (defun claude-code-ide-mcp--handle-request (session id method params)
   "Handle JSON-RPC request with ID, METHOD and PARAMS for SESSION."
   (let ((response
          (pcase method
            ("initialize" (claude-code-ide-mcp--handle-initialize id params))
            ("ping" (claude-code-ide-mcp--handle-ping id params))
+           ("tools/call" (claude-code-ide-mcp--handle-tools-call id params))
            (_ (claude-code-ide-mcp--handle-unknown-method id method)))))
     (when response
       (claude-code-ide-mcp--send-response session response))))
