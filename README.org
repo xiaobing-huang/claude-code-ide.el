@@ -15,6 +15,10 @@ Claude Code IDE for Emacs provides seamless integration with Claude Code CLI thr
 - Terminal integration with full color support using =vterm=
 - MCP protocol implementation for IDE integration
 - Tool support for file operations, editor state, and workspace info
+- Diagnostic integration with Flycheck
+- Advanced diff view with ediff integration
+- Tab-bar support for proper context switching
+- Selection and buffer tracking for better context awareness
 * Installation
 
 ** Prerequisites
@@ -40,15 +44,17 @@ Currently, this package is in early development. To install using =use-package= 
 
 ** Basic Commands
 
-| Command                              | Description                                       |
-|--------------------------------------+---------------------------------------------------|
-| =M-x claude-code-ide=                  | Start Claude Code for the current project         |
-| =M-x claude-code-ide-stop=             | Stop Claude Code for the current project          |
-| =M-x claude-code-ide-switch-to-buffer= | Switch to project's Claude buffer                 |
-| =M-x claude-code-ide-list-sessions=    | List all active Claude Code sessions and switch   |
-| =M-x claude-code-ide-check-status=     | Check if Claude Code CLI is installed and working |
-| =M-x claude-code-ide-show-debug=       | Show the debug buffer with WebSocket messages     |
-| =M-x claude-code-ide-clear-debug=      | Clear the debug buffer                            |
+| Command                                 | Description                                       |
+|-----------------------------------------+---------------------------------------------------|
+| =M-x claude-code-ide=                     | Start Claude Code for the current project         |
+| =M-x claude-code-ide-resume=              | Resume Claude Code with previous conversation     |
+| =M-x claude-code-ide-stop=                | Stop Claude Code for the current project          |
+| =M-x claude-code-ide-switch-to-buffer=    | Switch to project's Claude buffer                 |
+| =M-x claude-code-ide-list-sessions=       | List all active Claude Code sessions and switch   |
+| =M-x claude-code-ide-check-status=        | Check if Claude Code CLI is installed and working |
+| =M-x claude-code-ide-insert-at-mentioned= | Send selected text to Claude prompt               |
+| =M-x claude-code-ide-show-debug=          | Show the debug buffer with WebSocket messages     |
+| =M-x claude-code-ide-clear-debug=         | Clear the debug buffer                            |
 
 ** Multi-Project Support
 
@@ -69,6 +75,7 @@ You can run multiple Claude Code instances simultaneously for different projects
 |--------------------------------------+-----------------------------------------+--------------------------------------|
 | ~claude-code-ide-cli-path~             | Path to Claude Code CLI                 | ~"claude"~                             |
 | ~claude-code-ide-buffer-name-function~ | Function for buffer naming              | ~claude-code-ide--default-buffer-name~ |
+| ~claude-code-ide-cli-debug~            | Enable CLI debug mode (-d flag)         | ~nil~                                  |
 | ~claude-code-ide-debug~                | Enable debug logging                    | ~nil~                                  |
 | ~claude-code-ide-log-with-context~     | Include session context in log messages | ~t~                                    |
 | ~claude-code-ide-debug-buffer~         | Buffer name for debug output            | ~"*claude-code-ide-debug*"~              |
@@ -111,7 +118,17 @@ You can customize how Claude Code buffers are named:
 
 *** Debugging
 
-To enable debug logging (logs WebSocket messages and JSON-RPC communication):
+**** Claude CLI Debug Mode
+
+To enable debug mode for Claude Code CLI (passes the =-d= flag):
+
+#+begin_src emacs-lisp
+(setq claude-code-ide-cli-debug t)
+#+end_src
+
+**** Emacs Debug Logging
+
+To enable debug logging within Emacs (logs WebSocket messages and JSON-RPC communication):
 
 #+begin_src emacs-lisp
 (setq claude-code-ide-debug t)
