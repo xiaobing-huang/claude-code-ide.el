@@ -5,6 +5,10 @@
 #+KEYWORDS: emacs, claude, ai, code-assistant
 #+OPTIONS: toc:t num:nil
 
+[[https://github.com/manzaltu/claude-code-ide.el/actions/workflows/test.yml][file:https://github.com/manzaltu/claude-code-ide.el/workflows/CI/badge.svg]]
+[[https://www.gnu.org/software/emacs/][file:https://img.shields.io/badge/GNU%20Emacs-28--30-blueviolet.svg]]
+[[https://www.gnu.org/licenses/gpl-3.0][file:https://img.shields.io/badge/License-GPL%20v3-blue.svg]]
+
 * Overview
 
 Claude Code IDE for Emacs provides seamless integration with Claude Code CLI through the Model Context Protocol (MCP). This package enables AI-powered code assistance directly within your Emacs workflow.
