@@ -40,13 +40,15 @@ Currently, this package is in early development. To install using =use-package= 
 
 ** Basic Commands
 
-| Command                                 | Description                                       |
-|-----------------------------------------+---------------------------------------------------|
-| =M-x claude-code-ide=                   | Start Claude Code for the current project         |
-| =M-x claude-code-ide-stop=              | Stop Claude Code for the current project          |
-| =M-x claude-code-ide-switch-to-buffer=  | Switch to project's Claude buffer                 |
-| =M-x claude-code-ide-list-sessions=     | List all active Claude Code sessions and switch   |
-| =M-x claude-code-ide-check-status=      | Check if Claude Code CLI is installed and working |
+| Command                              | Description                                       |
+|--------------------------------------+---------------------------------------------------|
+| =M-x claude-code-ide=                  | Start Claude Code for the current project         |
+| =M-x claude-code-ide-stop=             | Stop Claude Code for the current project          |
+| =M-x claude-code-ide-switch-to-buffer= | Switch to project's Claude buffer                 |
+| =M-x claude-code-ide-list-sessions=    | List all active Claude Code sessions and switch   |
+| =M-x claude-code-ide-check-status=     | Check if Claude Code CLI is installed and working |
+| =M-x claude-code-ide-show-debug=       | Show the debug buffer with WebSocket messages     |
+| =M-x claude-code-ide-clear-debug=      | Clear the debug buffer                            |
 
 ** Multi-Project Support
 
@@ -67,6 +69,9 @@ You can run multiple Claude Code instances simultaneously for different projects
 |--------------------------------------+-----------------------------------------+--------------------------------------|
 | ~claude-code-ide-cli-path~             | Path to Claude Code CLI                 | ~"claude"~                             |
 | ~claude-code-ide-buffer-name-function~ | Function for buffer naming              | ~claude-code-ide--default-buffer-name~ |
+| ~claude-code-ide-debug~                | Enable debug logging                    | ~nil~                                  |
+| ~claude-code-ide-log-with-context~     | Include session context in log messages | ~t~                                    |
+| ~claude-code-ide-debug-buffer~         | Buffer name for debug output            | ~"*claude-code-ide-debug*"~              |
 | ~claude-code-ide-window-side~          | Side for Claude window                  | ~'right~                               |
 | ~claude-code-ide-window-width~         | Width for side windows (left/right)     | ~90~                                   |
 | ~claude-code-ide-window-height~        | Height for side windows (top/bottom)    | ~20~                                   |
@@ -103,6 +108,24 @@ You can customize how Claude Code buffers are named:
             (format "*Claude:%s*" (file-name-nondirectory (directory-file-name directory)))
           "*Claude:Global*")))
 #+end_src
+
+*** Debugging
+
+To enable debug logging (logs WebSocket messages and JSON-RPC communication):
+
+#+begin_src emacs-lisp
+(setq claude-code-ide-debug t)
+#+end_src
+
+Then view debug logs with:
+- =M-x claude-code-ide-show-debug= - Show the debug buffer
+- =M-x claude-code-ide-clear-debug= - Clear the debug buffer
+
+The debug buffer shows:
+- WebSocket connection events
+- All JSON-RPC messages (requests/responses)
+- Error messages and diagnostics
+- General debug information with session context
 
 * License
 

@@ -35,6 +35,7 @@
 (require 'cl-lib)
 (require 'project)
 (require 'url-parse)
+(require 'claude-code-ide-debug)
 (require 'claude-code-ide-mcp-handlers)
 
 ;;; Constants
@@ -127,7 +128,7 @@ Returns the session if found, nil otherwise."
         (with-temp-file lockfile-path
           (insert (json-encode lockfile-content)))
       (error
-       (message "Failed to create lockfile: %s" err)
+       (claude-code-ide-debug "Failed to create lockfile: %s" err)
        (signal 'mcp-error (list (format "Failed to create lockfile: %s" (error-message-string err))))))))
 
 (defun claude-code-ide-mcp--remove-lockfile (port)
@@ -163,10 +164,13 @@ Returns the session if found, nil otherwise."
     (let ((message `((jsonrpc . "2.0")
                      (method . ,method)
                      (params . ,params))))
+      (claude-code-ide-debug "Sending notification: %s" (json-encode message))
       (condition-case err
-          (websocket-send-text client (json-encode message))
+          (progn
+            (websocket-send-text client (json-encode message))
+            (claude-code-ide-debug "Sent %s notification" method))
         (error
-         (message "Failed to send notification %s: %s" method err))))))
+         (claude-code-ide-debug "Failed to send notification %s: %s" method err))))))
 
 (defun claude-code-ide-mcp--handle-initialize (id _params)
   "Handle the initialize request with ID."
@@ -229,10 +233,11 @@ Returns the session if found, nil otherwise."
 (defun claude-code-ide-mcp--send-response (session response)
   "Send RESPONSE through the WebSocket client of SESSION."
   (when-let ((client (claude-code-ide-mcp-session-client session)))
+    (claude-code-ide-debug "Sending response: %s" (json-encode response))
     (condition-case err
         (websocket-send-text client (json-encode response))
       (error
-       (message "Failed to send response: %s" err)))))
+       (claude-code-ide-debug "Failed to send response: %s" err)))))
 
 (defun claude-code-ide-mcp--process-message (session message)
   "Process incoming MESSAGE string for SESSION."
@@ -290,6 +295,7 @@ Returns the session if found, nil otherwise."
              claude-code-ide-mcp--sessions)
     (when session
       (setf (claude-code-ide-mcp-session-client session) ws)
+      (claude-code-ide-debug "WebSocket connection opened")
       (message "Claude Code connected to MCP server"))))
 
 (defun claude-code-ide-mcp--on-message (ws frame)
@@ -302,11 +308,12 @@ Returns the session if found, nil otherwise."
   "Handle WebSocket WS closing."
   (when-let ((session (claude-code-ide-mcp--find-session-by-websocket ws)))
     (setf (claude-code-ide-mcp-session-client session) nil)
+    (claude-code-ide-debug "WebSocket connection closed")
     (message "Claude Code disconnected from MCP server")))
 
 (defun claude-code-ide-mcp--on-error (ws type err)
   "Handle WebSocket WS error of TYPE with ERR."
-  (message "WebSocket error (%s): %s" type (error-message-string err)))
+  (claude-code-ide-debug "WebSocket error (%s): %s" type (error-message-string err)))
 
 ;;; Public Functions
 
@@ -336,6 +343,7 @@ Returns the session if found, nil otherwise."
     (puthash project-dir session claude-code-ide-mcp--sessions)
     ;; Create lockfile
     (claude-code-ide-mcp--create-lockfile port project-dir)
+    (claude-code-ide-debug "MCP server started on port %d for %s" port project-dir)
     (message "MCP server started on port %d for %s" port project-dir)
     port))
 
@@ -352,6 +360,7 @@ Returns the session if found, nil otherwise."
     (claude-code-ide-mcp--remove-lockfile (claude-code-ide-mcp-session-port session))
     ;; Remove from sessions table
     (remhash project-dir claude-code-ide-mcp--sessions)
+    (claude-code-ide-debug "MCP server stopped for %s" project-dir)
     (message "MCP server stopped for %s" project-dir)))
 
 (provide 'claude-code-ide-mcp)
