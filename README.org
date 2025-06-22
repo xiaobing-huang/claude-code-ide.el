@@ -1,0 +1,113 @@
+#+TITLE: Claude Code IDE for Emacs
+#+AUTHOR: Yoav Orot
+#+EMAIL: orot.yoav@gmail.com
+#+DESCRIPTION: Claude Code integration for Emacs
+#+KEYWORDS: emacs, claude, ai, code-assistant
+#+OPTIONS: toc:t num:nil
+
+* Overview
+
+Claude Code IDE for Emacs provides seamless integration with Claude Code CLI. This package enables AI-powered code assistance directly within your Emacs workflow.
+
+** Features
+
+- Automatic project detection and session management
+- Terminal integration with full color support using =vterm=
+* Installation
+
+** Prerequisites
+
+- Emacs 28.1 or higher
+- Claude Code CLI installed and available in PATH
+- =vterm= package (for terminal support)
+
+** Installing Claude Code CLI
+
+Follow the installation instructions at [[https://docs.anthropic.com/en/docs/claude-code][Claude Code Documentation]].
+
+** Installing the Emacs Package
+
+Currently, this package is in early development. To install using =use-package= and [[https://github.com/raxod502/straight.el][straight.el]]:
+
+#+begin_src emacs-lisp
+(use-package claude-code-ide
+  :straight (:type git :host github :repo "manzaltu/claude-code-ide.el"))
+#+end_src
+
+* Usage
+
+** Basic Commands
+
+| Command                                 | Description                                       |
+|-----------------------------------------+---------------------------------------------------|
+| =M-x claude-code-ide=                   | Start Claude Code for the current project         |
+| =M-x claude-code-ide-stop=              | Stop Claude Code for the current project          |
+| =M-x claude-code-ide-switch-to-buffer=  | Switch to project's Claude buffer                 |
+| =M-x claude-code-ide-list-sessions=     | List all active Claude Code sessions and switch   |
+| =M-x claude-code-ide-check-status=      | Check if Claude Code CLI is installed and working |
+
+** Multi-Project Support
+
+Claude Code IDE automatically detects your project using Emacs' built-in =project.el=. Each project gets its own Claude Code instance with a unique buffer name like =*claude-code[project-name]*=.
+
+You can run multiple Claude Code instances simultaneously for different projects. Use =claude-code-ide-list-sessions= to see all active sessions and switch between them.
+
+** Window Management
+
+- Running =claude-code-ide= when a session is already active will toggle the window visibility
+- The window can be closed with standard Emacs window commands (=C-x 0=) without stopping Claude
+
+** Configuration
+
+*** Configuration Variables
+
+| Variable                             | Description                             | Default                              |
+|--------------------------------------+-----------------------------------------+--------------------------------------|
+| ~claude-code-ide-cli-path~             | Path to Claude Code CLI                 | ~"claude"~                             |
+| ~claude-code-ide-buffer-name-function~ | Function for buffer naming              | ~claude-code-ide--default-buffer-name~ |
+| ~claude-code-ide-window-side~          | Side for Claude window                  | ~'right~                               |
+| ~claude-code-ide-window-width~         | Width for side windows (left/right)     | ~90~                                   |
+| ~claude-code-ide-window-height~        | Height for side windows (top/bottom)    | ~20~                                   |
+| ~claude-code-ide-focus-on-open~        | Focus Claude window when opened         | ~t~                                    |
+
+*** Side Window Configuration
+
+Claude Code buffers open in a side window by default. You can customize the placement:
+
+#+begin_src emacs-lisp
+;; Open Claude on the left side
+(setq claude-code-ide-window-side 'left)
+
+;; Open Claude at the bottom with custom height
+(setq claude-code-ide-window-side 'bottom
+      claude-code-ide-window-height 30)
+
+;; Open Claude on the right with custom width
+(setq claude-code-ide-window-side 'right
+      claude-code-ide-window-width 100)
+
+;; Don't automatically focus the Claude window
+(setq claude-code-ide-focus-on-open nil)
+#+end_src
+
+*** Custom Buffer Naming
+
+You can customize how Claude Code buffers are named:
+
+#+begin_src emacs-lisp
+(setq claude-code-ide-buffer-name-function
+      (lambda (directory)
+        (if directory
+            (format "*Claude:%s*" (file-name-nondirectory (directory-file-name directory)))
+          "*Claude:Global*")))
+#+end_src
+
+* License
+
+This project is licensed under the GNU General Public License v3.0 or later. See the LICENSE file for details.
+
+* Related Projects
+
+- [[https://docs.anthropic.com/en/docs/claude-code][Claude Code CLI]]
+- [[https://github.com/anthropics/claude-code][Claude Code VS Code Extension]]
+- [[https://github.com/coder/claudecode.nvim][claudecode.nvim]] - Neovim integration
