@@ -545,7 +545,8 @@ ARGUMENTS should contain:
 (defun claude-code-ide-mcp--handle-ediff-quit (tab-name &optional session)
   "Handle ediff quit for TAB-NAME.
 Prompts user to accept/reject changes and sends appropriate MCP response.
-SESSION is the MCP session to use - if not provided, uses diff-info stored session."
+SESSION is the MCP session to use - if not provided, uses diff-info stored
+session."
   (let* ((temp-session session)  ; Store the passed session
          (active-diffs (claude-code-ide-mcp--get-active-diffs temp-session))
          (diff-info (gethash tab-name active-diffs)))
