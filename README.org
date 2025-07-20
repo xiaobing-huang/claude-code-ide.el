@@ -76,8 +76,11 @@ Currently, this package is in early development. To install using =use-package= 
 
 ** Basic Commands
 
+The easiest way to interact with Claude Code IDE is through the transient menu interface, which provides visual access to all available commands. Simply run =M-x claude-code-ide-menu= to open the interactive menu.
+
 | Command                                 | Description                                       |
 |-----------------------------------------+---------------------------------------------------|
+| =M-x claude-code-ide-menu=                | Open transient menu with all Claude Code commands |
 | =M-x claude-code-ide=                     | Start Claude Code for the current project         |
 | =M-x claude-code-ide-resume=              | Resume Claude Code with previous conversation     |
 | =M-x claude-code-ide-stop=                | Stop Claude Code for the current project          |
