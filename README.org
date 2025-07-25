@@ -11,7 +11,7 @@
 
 * Overview
 
-Claude Code IDE for Emacs provides seamless integration with Claude Code CLI through the Model Context Protocol (MCP). This package enables AI-powered code assistance directly within your Emacs workflow.
+Claude Code IDE for Emacs provides native integration with Claude Code CLI through the Model Context Protocol (MCP). Unlike simple terminal wrappers, this package creates a bidirectional bridge between Claude and Emacs, enabling Claude to understand and leverage Emacs' powerful features—from LSP and project management to custom Elisp functions. This transforms Claude into a true Emacs-aware AI assistant that works within your existing workflow and can interact with your entire Emacs ecosystem.
 
 ** Features
 
@@ -24,6 +24,20 @@ Claude Code IDE for Emacs provides seamless integration with Claude Code CLI thr
 - Advanced diff view with ediff integration
 - Tab-bar support for proper context switching
 - Selection and buffer tracking for better context awareness
+
+** Emacs Tool Integration
+
+This package enables Claude Code to leverage the full power of Emacs through MCP tools integration. Claude can directly access and utilize Emacs capabilities including:
+
+- *Language Server Protocol (LSP)* integration through xref commands for intelligent code navigation (eglot, lsp-mode and others)
+- *Imenu* for structured symbol listing and navigation within files
+- *Project* integration for project-aware operations
+- *Any Emacs command or function* can be exposed as an MCP tool, allowing Claude to:
+  - Perform project-wide searches and refactoring
+  - Access specialized modes and their features
+  - Execute custom Elisp functions tailored to your workflow
+
+This deep integration means Claude Code understands your project context and can leverage Emacs' extensive ecosystem to provide more intelligent and context-aware assistance.
 
 ** Screenshots
 
