@@ -37,9 +37,9 @@
 (require 'url-parse)
 (require 'claude-code-ide-debug)
 (require 'claude-code-ide-mcp-handlers)
+(require 'claude-code-ide-mcp-server)
 
 ;; External declarations
-(declare-function claude-code-ide-mcp-server-update-last-active-buffer "claude-code-ide-mcp-server" (session-id buffer))
 (defvar claude-code-ide--session-ids)
 
 ;;; Constants

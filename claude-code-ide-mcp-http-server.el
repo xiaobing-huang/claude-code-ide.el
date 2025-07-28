@@ -48,7 +48,6 @@
     (error
      (claude-code-ide-debug "Failed to load web-server package: %s" (error-message-string err)))))
 
-(declare-function claude-code-ide-mcp-server-tools "claude-code-ide-mcp-server" ())
 (declare-function ws-process "web-server" (server))
 
 ;;; Server State

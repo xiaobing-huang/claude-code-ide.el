@@ -34,8 +34,8 @@
 (require 'json)
 (require 'ediff)
 (require 'claude-code-ide-diagnostics)
+(require 'claude-code-ide-debug)
 
-(declare-function claude-code-ide-debug "claude-code-ide-debug" (format-string &rest args))
 (declare-function claude-code-ide-mcp-complete-deferred "claude-code-ide-mcp" (method result &optional unique-key))
 (declare-function claude-code-ide-mcp--get-current-session "claude-code-ide-mcp" ())
 (declare-function claude-code-ide-mcp--get-session-for-project "claude-code-ide-mcp" (project-dir))
@@ -43,8 +43,6 @@
 (declare-function claude-code-ide-mcp-session-active-diffs "claude-code-ide-mcp" (session))
 (declare-function claude-code-ide-mcp-session-original-tab "claude-code-ide-mcp" (session))
 (declare-function claude-code-ide-mcp--setup-buffer-cache-hooks "claude-code-ide-mcp" ())
-(declare-function ediff-really-quit "ediff-util" (reverse-default-keep-variants))
-(declare-function claude-code-ide-diagnostics-handler "claude-code-ide-diagnostics" (params &optional session))
 (declare-function claude-code-ide--get-buffer-name "claude-code-ide" (&optional directory))
 (declare-function claude-code-ide--display-buffer-in-side-window "claude-code-ide" (buffer))
 (defvar ediff-control-buffer)

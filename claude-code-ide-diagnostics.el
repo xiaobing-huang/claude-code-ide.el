@@ -33,10 +33,10 @@
 (require 'cl-lib)
 (require 'flycheck)
 (require 'json)
+(require 'claude-code-ide-debug)
 
 ;; Forward declarations
 (declare-function claude-code-ide-mcp-session-project-dir "claude-code-ide-mcp" (session))
-(declare-function claude-code-ide-debug "claude-code-ide-debug" (format-string &rest args))
 
 ;;; Diagnostic Collection
 

@@ -66,17 +66,6 @@
 (require 'claude-code-ide-mcp-server)
 (require 'claude-code-ide-emacs-tools)
 
-(declare-function claude-code-ide-mcp-stop-session "claude-code-ide-mcp" (project-dir))
-(declare-function claude-code-ide-mcp--get-session-for-project "claude-code-ide-mcp" (project-dir))
-(declare-function claude-code-ide-mcp-session-original-tab "claude-code-ide-mcp" (session))
-(declare-function claude-code-ide-mcp--get-buffer-project "claude-code-ide-mcp" ())
-(declare-function claude-code-ide-mcp-session-client "claude-code-ide-mcp" (session))
-(declare-function claude-code-ide-mcp-send-at-mentioned "claude-code-ide-mcp" ())
-(declare-function claude-code-ide-mcp-server-ensure-server "claude-code-ide-mcp-server" ())
-(declare-function claude-code-ide-mcp-server-get-config "claude-code-ide-mcp-server" ())
-(declare-function claude-code-ide-mcp-server-session-started "claude-code-ide-mcp-server" ())
-(declare-function claude-code-ide-mcp-server-session-ended "claude-code-ide-mcp-server" ())
-
 ;;; Customization
 
 (defgroup claude-code-ide nil

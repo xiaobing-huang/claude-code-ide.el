@@ -30,6 +30,7 @@
 ;;; Code:
 
 (require 'transient)
+(require 'claude-code-ide-debug)
 
 ;; Declare functions from other files to avoid circular dependencies
 (declare-function claude-code-ide "claude-code-ide" ())
@@ -43,9 +44,6 @@
 (declare-function claude-code-ide-insert-newline "claude-code-ide" ())
 (declare-function claude-code-ide-toggle "claude-code-ide" ())
 (declare-function claude-code-ide-check-status "claude-code-ide" ())
-(declare-function claude-code-ide-show-debug "claude-code-ide-debug" ())
-(declare-function claude-code-ide-clear-debug "claude-code-ide-debug" ())
-(declare-function claude-code-ide-log "claude-code-ide-debug" (format-string &rest args))
 (declare-function claude-code-ide--ensure-cli "claude-code-ide" ())
 (declare-function claude-code-ide-mcp--active-sessions "claude-code-ide-mcp" ())
 (declare-function claude-code-ide-mcp-session-project-dir "claude-code-ide-mcp" (session))
