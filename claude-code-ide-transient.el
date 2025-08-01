@@ -297,7 +297,7 @@ Otherwise, if multiple sessions exist, prompt for selection."
 
 ;;; Transient Menus
 
-;;;###autoload
+;;;###autoload (autoload 'claude-code-ide-menu "claude-code-ide-transient" nil t)
 (transient-define-prefix claude-code-ide-menu ()
   "Claude Code IDE main menu."
   [:description claude-code-ide--session-status]
@@ -319,6 +319,7 @@ Otherwise, if multiple sessions exist, prompt for selection."
     ("C" "Configuration" claude-code-ide-config-menu)
     ("d" "Debugging" claude-code-ide-debug-menu)]])
 
+;;;###autoload (autoload 'claude-code-ide-config-menu "claude-code-ide-transient" nil t)
 (transient-define-prefix claude-code-ide-config-menu ()
   "Claude Code configuration menu."
   ["Claude Code Configuration"
@@ -345,6 +346,7 @@ Otherwise, if multiple sessions exist, prompt for selection."
   ["Save"
    ("S" "Save configuration" claude-code-ide--save-config)])
 
+;;;###autoload (autoload 'claude-code-ide-debug-menu "claude-code-ide-transient" nil t)
 (transient-define-prefix claude-code-ide-debug-menu ()
   "Claude Code debug menu."
   ["Claude Code Debug"
