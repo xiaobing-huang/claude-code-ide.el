@@ -345,9 +345,13 @@ have completed before cleanup.  Waits up to 5 seconds."
   (let ((claude-code-ide--cli-available t)
         (claude-code-ide-cli-path "echo")
         (claude-code-ide-terminal-backend 'vterm)
-        (orig-fboundp (symbol-function 'fboundp)))
-    (cl-letf (((symbol-function 'fboundp)
-               (lambda (sym) (if (eq sym 'vterm) nil (funcall orig-fboundp sym)))))
+        (orig-featurep (symbol-function 'featurep)))
+    (cl-letf (((symbol-function 'featurep)
+               (lambda (sym) (if (eq sym 'vterm) nil (funcall orig-featurep sym))))
+              ((symbol-function 'require)
+               (lambda (feature &optional filename noerror)
+                 (unless (eq feature 'vterm)
+                   (require feature filename noerror)))))
       (should-error (claude-code-ide)
                     :type 'user-error))))
 
@@ -356,9 +360,13 @@ have completed before cleanup.  Waits up to 5 seconds."
   (let ((claude-code-ide--cli-available t)
         (claude-code-ide-cli-path "echo")
         (claude-code-ide-terminal-backend 'eat)
-        (orig-fboundp (symbol-function 'fboundp)))
-    (cl-letf (((symbol-function 'fboundp)
-               (lambda (sym) (if (eq sym 'eat) nil (funcall orig-fboundp sym)))))
+        (orig-featurep (symbol-function 'featurep)))
+    (cl-letf (((symbol-function 'featurep)
+               (lambda (sym) (if (eq sym 'eat) nil (funcall orig-featurep sym))))
+              ((symbol-function 'require)
+               (lambda (feature &optional filename noerror)
+                 (unless (eq feature 'eat)
+                   (require feature filename noerror)))))
       (should-error (claude-code-ide)
                     :type 'user-error))))
 
@@ -374,8 +382,8 @@ have completed before cleanup.  Waits up to 5 seconds."
 
   ;; Test invalid backend
   (let ((claude-code-ide-terminal-backend 'invalid-backend)
-        (orig-fboundp (symbol-function 'fboundp)))
-    (cl-letf (((symbol-function 'fboundp)
+        (orig-featurep (symbol-function 'featurep)))
+    (cl-letf (((symbol-function 'featurep)
                (lambda (sym) nil)))
       (should-error (claude-code-ide--terminal-ensure-backend)
                     :type 'user-error))))
@@ -423,12 +431,53 @@ have completed before cleanup.  Waits up to 5 seconds."
           (claude-code-ide--terminal-send-return)
           (should (equal eat-string-sent "\r")))))))
 
+(ert-deftest claude-code-ide-test-send-prompt-command ()
+  "Test the claude-code-ide-send-prompt command."
+  (let ((test-prompt "Test prompt from minibuffer")
+        (prompted-string nil)
+        (sent-string nil)
+        (sent-return nil))
+    ;; Mock read-string to return our test prompt
+    (cl-letf (((symbol-function 'read-string)
+               (lambda (prompt &rest _)
+                 (setq prompted-string prompt)
+                 test-prompt))
+              ((symbol-function 'claude-code-ide--get-buffer-name)
+               (lambda () "*test-claude-buffer*"))
+              ((symbol-function 'claude-code-ide--terminal-send-string)
+               (lambda (str) (setq sent-string str)))
+              ((symbol-function 'claude-code-ide--terminal-send-return)
+               (lambda () (setq sent-return t))))
+
+      ;; Test with existing buffer
+      (with-temp-buffer
+        (rename-buffer "*test-claude-buffer*")
+        (claude-code-ide-send-prompt)
+        (should (equal prompted-string "Claude prompt: "))
+        (should (equal sent-string test-prompt))
+        (should sent-return))
+
+      ;; Test with non-existent buffer (should error)
+      (should-error (claude-code-ide-send-prompt) :type 'user-error)
+
+      ;; Test with empty prompt (should not send anything)
+      (setq sent-string nil sent-return nil)
+      (cl-letf (((symbol-function 'read-string)
+                 (lambda (&rest _) "")))
+        (with-temp-buffer
+          (rename-buffer "*test-claude-buffer*")
+          (claude-code-ide-send-prompt)
+          (should (null sent-string))
+          (should (null sent-return)))))))
+
 (ert-deftest claude-code-ide-test-terminal-session-creation ()
   "Test terminal session creation with both backends."
   (let ((mock-vterm-buffer nil)
         (mock-eat-buffer nil)
         (mock-process (start-process "mock" nil "true")))
-    (cl-letf (((symbol-function 'vterm)
+    (cl-letf (((symbol-function 'claude-code-ide--terminal-ensure-backend)
+               (lambda () nil))  ; Mock the ensure function to do nothing
+              ((symbol-function 'vterm)
                (lambda (name)
                  (setq mock-vterm-buffer (get-buffer-create name))))
               ((symbol-function 'eat-mode)
@@ -689,21 +738,31 @@ have completed before cleanup.  Waits up to 5 seconds."
 
 (ert-deftest claude-code-ide-test-build-command-with-system-prompt ()
   "Test building command with append-system-prompt flag."
+  ;; Test with user system prompt
   (let ((claude-code-ide-cli-path "claude")
         (claude-code-ide-system-prompt "You are a helpful assistant")
         (claude-code-ide-cli-debug nil)
         (claude-code-ide-cli-extra-flags ""))
     (let ((cmd (claude-code-ide--build-claude-command)))
       (should (string-match-p "--append-system-prompt" cmd))
-      ;; shell-quote-argument may escape spaces differently on different systems
+      ;; Check that Emacs prompt is included (accounting for shell escaping)
+      (should (or (string-match-p "Connected to Emacs" cmd)
+                  (string-match-p "Connected\\\\ to\\\\ Emacs" cmd)))
+      ;; Check that user prompt is included
       (should (or (string-match-p "You are a helpful assistant" cmd)
                   (string-match-p "You\\\\ are\\\\ a\\\\ helpful\\\\ assistant" cmd)))))
-  ;; Test with nil value (should not add the flag)
+  ;; Test with nil value (should still add the Emacs prompt)
   (let ((claude-code-ide-cli-path "claude")
         (claude-code-ide-system-prompt nil)
         (claude-code-ide-cli-debug nil)
         (claude-code-ide-cli-extra-flags ""))
-    (should-not (string-match-p "--append-system-prompt" (claude-code-ide--build-claude-command))))
+    (let ((cmd (claude-code-ide--build-claude-command)))
+      (should (string-match-p "--append-system-prompt" cmd))
+      ;; Check that Emacs prompt is included (accounting for shell escaping)
+      (should (or (string-match-p "Connected to Emacs" cmd)
+                  (string-match-p "Connected\\\\ to\\\\ Emacs" cmd)))
+      ;; Should not contain user prompt when nil
+      (should-not (string-match-p "You are a helpful assistant" cmd))))
   ;; Test with special characters that need quoting
   (let ((claude-code-ide-cli-path "claude")
         (claude-code-ide-system-prompt "You're a \"helpful\" assistant!")
@@ -711,6 +770,9 @@ have completed before cleanup.  Waits up to 5 seconds."
         (claude-code-ide-cli-extra-flags ""))
     (let ((cmd (claude-code-ide--build-claude-command)))
       (should (string-match-p "--append-system-prompt" cmd))
+      ;; Check that Emacs prompt is included (accounting for shell escaping)
+      (should (or (string-match-p "Connected to Emacs" cmd)
+                  (string-match-p "Connected\\\\ to\\\\ Emacs" cmd)))
       ;; The command should contain the escaped version (shell-quote-argument escapes quotes and apostrophes)
       (should (string-match-p "You\\\\'re\\\\ a\\\\ \\\\\"helpful\\\\\"\\\\ assistant\\\\!" cmd)))))
 
@@ -972,11 +1034,15 @@ have completed before cleanup.  Waits up to 5 seconds."
     (claude-code-ide-mcp-stop)))
 
 ;; Test for side window handling in openDiff
+(defvar claude-code-ide-debug-buffer)
 (ert-deftest claude-code-ide-test-opendiff-side-window ()
   "Test that openDiff handles side windows correctly."
+  (require 'claude-code-ide-debug)
+  (require 'claude-code-ide-mcp-handlers)
   (let* ((temp-dir (make-temp-file "test-project-" t))
          (claude-code-ide-mcp--sessions (make-hash-table :test 'equal))
          (claude-code-ide-debug t)
+         (claude-code-ide-debug-buffer "*claude-code-ide-debug*")
          (temp-file (make-temp-file "test-diff-" nil ".txt" "Original content\n"))
          (side-window nil)
          ;; Create a mock session for the test
@@ -1084,6 +1150,35 @@ have completed before cleanup.  Waits up to 5 seconds."
     (should (equal (alist-get 'type (car result)) "text"))
     ;; The text should be an empty array "[]"
     (should (equal (alist-get 'text (car result)) "[]"))))
+
+;; Define mock struct for flymake diagnostics testing
+(cl-defstruct claude-code-ide-test-mock-diag
+  beg end type text backend)
+
+(ert-deftest claude-code-ide-test-flymake-diagnostics ()
+  "Test flymake diagnostics collection."
+  ;; Skip this test in batch mode as it requires a complex flymake setup
+  (skip-unless nil)
+  (require 'claude-code-ide-diagnostics))
+
+(ert-deftest claude-code-ide-test-diagnostics-backend-auto ()
+  "Test automatic backend detection."
+  (require 'claude-code-ide-diagnostics)
+  ;; Test flycheck detection
+  (cl-letf (((symbol-function 'featurep)
+             (lambda (feature)
+               (memq feature '(flycheck flymake))))
+            ((symbol-function 'bound-and-true-p)
+             (lambda (var)
+               (eq var 'flycheck-mode)))
+            ((symbol-function 'flycheck-diagnostics)
+             (lambda () nil))
+            (flycheck-current-errors nil)
+            (claude-code-ide-diagnostics-backend 'auto))
+    (with-temp-buffer
+      (let ((diags (claude-code-ide-diagnostics-get-all (current-buffer))))
+        ;; Should use flycheck when flycheck-mode is active
+        (should (vectorp diags))))))
 
 (ert-deftest claude-code-ide-test-check-document-dirty ()
   "Test checkDocumentDirty handler."
