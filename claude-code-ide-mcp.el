@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025
 
 ;; Author: Yoav Orot
-;; Version: 0.2.0
+;; Version: 0.2.5
 ;; Package-Requires: ((emacs "28.1") (websocket "1.12"))
 ;; Keywords: ai, claude, mcp
 
@@ -30,7 +30,21 @@
 
 ;;; Code:
 
-(require 'websocket)
+;; Declare external functions for byte-compilation
+(declare-function websocket-server "websocket" (port &rest plist))
+(declare-function websocket-server-close "websocket" (server))
+(declare-function websocket-server-filter "websocket" (proc string))
+(declare-function websocket-send-text "websocket" (ws text))
+(declare-function websocket-send "websocket" (ws frame))
+(declare-function websocket-ready-state "websocket" (websocket))
+(declare-function websocket-url "websocket" (websocket))
+(declare-function websocket-frame-text "websocket" (frame))
+(declare-function websocket-frame-opcode "websocket" (frame))
+(declare-function make-websocket-frame "websocket" (&rest args))
+
+;; Try to load websocket - it's required for functionality but we allow
+;; compilation without it for CI/testing environments
+(require 'websocket nil t)
 (require 'json)
 (require 'cl-lib)
 (require 'project)

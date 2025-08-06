@@ -3,8 +3,8 @@
 ;; Copyright (C) 2025
 
 ;; Author: Yoav Orot
-;; Version: 0.2.0
-;; Package-Requires: ((emacs "27.1"))
+;; Version: 0.2.5
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -347,7 +347,7 @@ have completed before cleanup.  Waits up to 5 seconds."
         (claude-code-ide-terminal-backend 'vterm)
         (orig-featurep (symbol-function 'featurep)))
     (cl-letf (((symbol-function 'featurep)
-               (lambda (sym) (if (eq sym 'vterm) nil (funcall orig-featurep sym))))
+               (lambda (sym &rest _) (if (eq sym 'vterm) nil (funcall orig-featurep sym))))
               ((symbol-function 'require)
                (lambda (feature &optional filename noerror)
                  (unless (eq feature 'vterm)
@@ -362,7 +362,7 @@ have completed before cleanup.  Waits up to 5 seconds."
         (claude-code-ide-terminal-backend 'eat)
         (orig-featurep (symbol-function 'featurep)))
     (cl-letf (((symbol-function 'featurep)
-               (lambda (sym) (if (eq sym 'eat) nil (funcall orig-featurep sym))))
+               (lambda (sym &rest _) (if (eq sym 'eat) nil (funcall orig-featurep sym))))
               ((symbol-function 'require)
                (lambda (feature &optional filename noerror)
                  (unless (eq feature 'eat)
@@ -1166,7 +1166,7 @@ have completed before cleanup.  Waits up to 5 seconds."
   (require 'claude-code-ide-diagnostics)
   ;; Test flycheck detection
   (cl-letf (((symbol-function 'featurep)
-             (lambda (feature)
+             (lambda (feature &rest _)
                (memq feature '(flycheck flymake))))
             ((symbol-function 'bound-and-true-p)
              (lambda (var)

@@ -3,8 +3,8 @@
 ;; Copyright (C) 2025
 
 ;; Author: Yoav Orot
-;; Version: 0.2.0
-;; Package-Requires: ((emacs "28.1") (vterm "0.0.1") (eat "0.9.4") (websocket "1.12") (transient "0.9.0"))
+;; Version: 0.2.5
+;; Package-Requires: ((emacs "28.1") (websocket "1.12") (transient "0.9.0") (web-server "0.1.2"))
 ;; Keywords: ai, claude, code, assistant, mcp, websocket
 ;; URL: https://github.com/manzaltu/claude-code-ide.el
 
@@ -60,11 +60,31 @@
 
 (require 'cl-lib)
 (require 'project)
-(require 'claude-code-ide-mcp)
 (require 'claude-code-ide-debug)
+(require 'claude-code-ide-mcp)
 (require 'claude-code-ide-transient)
 (require 'claude-code-ide-mcp-server)
 (require 'claude-code-ide-emacs-tools)
+
+;; External variable declarations
+(defvar eat-terminal nil)
+(defvar vterm-shell nil)
+(defvar vterm-environment nil)
+(defvar eat-term-name nil)
+(defvar vterm--process nil)
+
+;; External function declarations for vterm
+(declare-function vterm "vterm" (&optional arg))
+(declare-function vterm-send-string "vterm" (string))
+(declare-function vterm-send-escape "vterm" ())
+(declare-function vterm-send-return "vterm" ())
+(declare-function vterm--window-adjust-process-window-size "vterm" (&optional frame))
+
+;; External function declarations for eat
+(declare-function eat-mode "eat" ())
+(declare-function eat-exec "eat" (buffer name command startfile &rest switches))
+(declare-function eat-term-send-string "eat" (terminal string))
+(declare-function eat--adjust-process-window-size "eat" (process windows))
 
 ;;; Customization
 
