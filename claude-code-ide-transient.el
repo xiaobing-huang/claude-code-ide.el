@@ -3,8 +3,6 @@
 ;; Copyright (C) 2025
 
 ;; Author: Yoav Orot
-;; Version: 0.2.5
-;; Package-Requires: ((emacs "28.1") (transient "0.9.0"))
 ;; Keywords: ai, claude, transient, menu
 
 ;; This file is not part of GNU Emacs.
@@ -298,7 +296,7 @@ Otherwise, if multiple sessions exist, prompt for selection."
 
 ;;; Transient Menus
 
-;;;###autoload (autoload 'claude-code-ide-menu "claude-code-ide-transient" nil t)
+;;;###autoload (autoload 'claude-code-ide-menu "claude-code-ide-transient" "Claude Code IDE main menu." t)
 (transient-define-prefix claude-code-ide-menu ()
   "Claude Code IDE main menu."
   [:description claude-code-ide--session-status]

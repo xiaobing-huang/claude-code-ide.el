@@ -3,8 +3,6 @@
 ;; Copyright (C) 2025
 
 ;; Author: Yoav Orot
-;; Version: 0.2.5
-;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: ai, claude, diagnostics, flycheck
 
 ;; This file is not part of GNU Emacs.
@@ -42,7 +40,7 @@
 (declare-function claude-code-ide-mcp-session-project-dir "claude-code-ide-mcp" (session))
 
 ;; Flycheck declarations
-(defvar flycheck-current-errors nil)
+(defvar flycheck-current-errors)
 (declare-function flycheck-error-line "flycheck" (err))
 (declare-function flycheck-error-column "flycheck" (err))
 (declare-function flycheck-error-end-line "flycheck" (err))
