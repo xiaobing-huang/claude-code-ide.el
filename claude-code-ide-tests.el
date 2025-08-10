@@ -512,6 +512,84 @@ have completed before cleanup.  Waits up to 5 seconds."
             (should (processp (cdr result)))
             (should (bufferp mock-eat-buffer))))))))
 
+(ert-deftest claude-code-ide-test-vterm-smart-renderer-passthrough ()
+  "Test that vterm smart renderer passes through normal text immediately."
+  (let ((orig-fun-called nil)
+        (orig-fun-input nil)
+        (claude-code-ide-vterm-anti-flicker t))
+    (cl-letf (((symbol-function 'claude-code-ide--session-buffer-p)
+               (lambda (_) t)))
+      (with-temp-buffer
+        (let ((claude-code-ide--vterm-render-queue nil)
+              (claude-code-ide--vterm-render-timer nil)
+              (mock-process (make-process :name "mock"
+                                          :buffer (current-buffer)
+                                          :command '("true"))))
+          ;; Create a mock original function
+          (let ((orig-fun (lambda (_process input)
+                            (setq orig-fun-called t
+                                  orig-fun-input input))))
+            ;; Test with normal text (no escape sequences)
+            (claude-code-ide--vterm-smart-renderer orig-fun mock-process "Hello World")
+            ;; Should pass through immediately
+            (should orig-fun-called)
+            (should (equal orig-fun-input "Hello World"))
+            (should-not claude-code-ide--vterm-render-queue)))))))
+
+(ert-deftest claude-code-ide-test-vterm-smart-renderer-batching ()
+  "Test that vterm smart renderer batches complex escape sequences."
+  (let ((orig-fun-called nil)
+        (timer-created nil)
+        (claude-code-ide-vterm-anti-flicker t)
+        (claude-code-ide-vterm-render-delay 0.005))
+    (cl-letf (((symbol-function 'claude-code-ide--session-buffer-p)
+               (lambda (_) t))
+              ((symbol-function 'run-at-time)
+               (lambda (delay &rest _)
+                 (setq timer-created delay)
+                 'mock-timer))
+              ((symbol-function 'cancel-timer)
+               (lambda (_) nil)))
+      (with-temp-buffer
+        (let ((claude-code-ide--vterm-render-queue nil)
+              (claude-code-ide--vterm-render-timer nil)
+              (mock-process (make-process :name "mock"
+                                          :buffer (current-buffer)
+                                          :command '("true"))))
+          ;; Create a mock original function
+          (let ((orig-fun (lambda (_process _input)
+                            (setq orig-fun-called t))))
+            ;; Test with complex escape sequence pattern
+            (let ((complex-input "\033[2A\033[K\033[3A\033[K"))
+              (claude-code-ide--vterm-smart-renderer orig-fun mock-process complex-input)
+              ;; Should be queued, not called immediately
+              (should-not orig-fun-called)
+              (should (equal claude-code-ide--vterm-render-queue complex-input))
+              (should (equal timer-created 0.005)))))))))
+
+(ert-deftest claude-code-ide-test-toggle-vterm-optimization ()
+  "Test toggling vterm optimization on and off."
+  (let ((original-value claude-code-ide-vterm-anti-flicker)
+        (message-output nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'message)
+                   (lambda (format &rest args)
+                     (setq message-output (apply #'format format args)))))
+          ;; Start with optimization enabled
+          (setq claude-code-ide-vterm-anti-flicker t)
+
+          ;; Toggle off
+          (claude-code-ide-toggle-vterm-optimization)
+          (should-not claude-code-ide-vterm-anti-flicker)
+          (should (string-match "disabled" message-output))
+
+          ;; Toggle back on
+          (claude-code-ide-toggle-vterm-optimization)
+          (should claude-code-ide-vterm-anti-flicker)
+          (should (string-match "enabled" message-output)))
+      ;; Restore original value
+      (setq claude-code-ide-vterm-anti-flicker original-value))))
+
 (ert-deftest claude-code-ide-test-run-with-cli ()
   "Test successful run command execution."
   (skip-unless nil) ; Skip this test for now
@@ -573,6 +651,35 @@ have completed before cleanup.  Waits up to 5 seconds."
     ;; Should not error and should detect CLI
     (claude-code-ide-check-status)
     (should claude-code-ide--cli-available)))
+
+(ert-deftest claude-code-ide-test-terminal-initialization-delay ()
+  "Test terminal initialization delay configuration."
+  ;; Test default value
+  (should (boundp 'claude-code-ide-terminal-initialization-delay))
+  (should (numberp claude-code-ide-terminal-initialization-delay))
+  (should (= claude-code-ide-terminal-initialization-delay 0.1))
+
+  ;; Test customization
+  (let ((original-delay claude-code-ide-terminal-initialization-delay))
+    (unwind-protect
+        (progn
+          (setq claude-code-ide-terminal-initialization-delay 0.2)
+          (should (= claude-code-ide-terminal-initialization-delay 0.2)))
+      ;; Restore original value
+      (setq claude-code-ide-terminal-initialization-delay original-delay))))
+
+(ert-deftest claude-code-ide-test-obsolete-eat-delay-alias ()
+  "Test that the obsolete eat delay alias still works."
+  ;; The alias should be defined
+  (should (boundp 'claude-code-ide-eat-initialization-delay))
+  ;; Setting the old variable should affect the new one
+  (let ((original-delay claude-code-ide-terminal-initialization-delay))
+    (unwind-protect
+        (progn
+          (setq claude-code-ide-eat-initialization-delay 0.3)
+          (should (= claude-code-ide-terminal-initialization-delay 0.3)))
+      ;; Restore original value
+      (setq claude-code-ide-terminal-initialization-delay original-delay))))
 
 (ert-deftest claude-code-ide-test-stop-no-session ()
   "Test stop command when no session is running."
@@ -1904,28 +2011,133 @@ have completed before cleanup.  Waits up to 5 seconds."
       (delete-file test-file)
       (claude-code-ide-mcp-server-unregister-session session-id))))
 
+(ert-deftest claude-code-ide-test-tool-format-backward-compatibility ()
+  "Test that both old and new tool formats work correctly."
+  (require 'claude-code-ide-mcp-server)
+
+  ;; Define a test function
+  (defun test-tool-func (arg1 arg2)
+    "Test function for tool format testing."
+    (list arg1 arg2))
+
+  ;; Test old format
+  (let ((old-format-tool '(test-tool-func
+                           :description "Test tool in old format"
+                           :parameters ((:name "arg1"
+                                               :type "string"
+                                               :required t
+                                               :description "First argument")
+                                        (:name "arg2"
+                                               :type "number"
+                                               :required nil
+                                               :description "Second argument")))))
+
+    ;; Check format detection
+    (should (eq (claude-code-ide--tool-format-p old-format-tool) 'old))
+
+    ;; Check normalization - should emit warning
+    (let ((warning-msg nil))
+      ;; Capture the warning message
+      (cl-letf (((symbol-function 'message)
+                 (lambda (fmt &rest args)
+                   (when (string-match "deprecated format" fmt)
+                     (setq warning-msg (apply #'format fmt args))))))
+        (let ((normalized (claude-code-ide--normalize-tool-spec old-format-tool)))
+          (should (eq (plist-get normalized :function) 'test-tool-func))
+          (should (equal (plist-get normalized :name) "test-tool-func"))
+          (should (equal (plist-get normalized :description) "Test tool in old format"))
+          (should (equal (length (plist-get normalized :args)) 2))))
+      ;; Verify warning was emitted
+      (should warning-msg)
+      (should (string-match "test-tool-func.*deprecated.*claude-code-ide-make-tool" warning-msg))))
+
+  ;; Test new format
+  (let ((new-format-tool (claude-code-ide-make-tool
+                          :function #'test-tool-func
+                          :name "test_tool_new"
+                          :description "Test tool in new format"
+                          :args '((:name "arg1"
+                                         :type string
+                                         :description "First argument")
+                                  (:name "arg2"
+                                         :type number
+                                         :description "Second argument"
+                                         :optional t)))))
+
+    ;; Check format detection
+    (should (eq (claude-code-ide--tool-format-p new-format-tool) 'new))
+
+    ;; Check normalization
+    (let ((normalized (claude-code-ide--normalize-tool-spec new-format-tool)))
+      (should (eq (plist-get normalized :function) 'test-tool-func))
+      (should (equal (plist-get normalized :name) "test_tool_new"))
+      (should (equal (plist-get normalized :description) "Test tool in new format"))
+      (let ((args (plist-get normalized :args)))
+        (should (equal (length args) 2))
+        ;; Check first argument
+        (let ((arg1 (car args)))
+          (should (equal (plist-get arg1 :name) "arg1"))
+          (should (eq (plist-get arg1 :type) 'string))
+          (should (not (plist-get arg1 :optional))))
+        ;; Check second argument
+        (let ((arg2 (cadr args)))
+          (should (equal (plist-get arg2 :name) "arg2"))
+          (should (eq (plist-get arg2 :type) 'number))
+          (should (plist-get arg2 :optional))))))
+
+  ;; Test that both formats can coexist in the same list
+  (let* ((claude-code-ide-mcp-server-tools
+          (list
+           ;; Old format
+           '(test-func-old
+             :description "Old format tool"
+             :parameters ((:name "param" :type "string" :required t)))
+           ;; New format
+           (claude-code-ide-make-tool
+            :function #'test-func-new
+            :name "test_func_new"
+            :description "New format tool"
+            :args '((:name "param" :type string)))))
+         (normalized-tools (mapcar #'claude-code-ide--normalize-tool-spec
+                                   claude-code-ide-mcp-server-tools)))
+
+    ;; Both tools should normalize correctly
+    (should (equal (length normalized-tools) 2))
+    (should (eq (plist-get (car normalized-tools) :function) 'test-func-old))
+    (should (eq (plist-get (cadr normalized-tools) :function) 'test-func-new))))
+
 (ert-deftest claude-code-ide-emacs-tools-test-tool-configuration ()
   "Test that imenu tool is properly configured."
   (require 'claude-code-ide-emacs-tools)
+  (require 'claude-code-ide-mcp-server)
 
-  ;; Check that the tool is in the configuration
-  (let ((imenu-tool (assq 'claude-code-ide-mcp-imenu-list-symbols
-                          claude-code-ide-emacs-tools)))
+  ;; Setup tools first
+  (claude-code-ide-emacs-tools-setup)
+
+  ;; Find the imenu tool in the registered tools
+  (let ((imenu-tool (cl-find-if
+                     (lambda (tool)
+                       (let ((normalized (claude-code-ide--normalize-tool-spec tool)))
+                         (eq (plist-get normalized :function)
+                             'claude-code-ide-mcp-imenu-list-symbols)))
+                     claude-code-ide-mcp-server-tools)))
     (should imenu-tool)
 
-    ;; Check description
-    (should (equal (plist-get (cdr imenu-tool) :description)
-                   "Navigate and explore a file's structure by listing all its functions, classes, and variables with their locations"))
+    ;; Normalize the tool to check its properties
+    (let ((normalized (claude-code-ide--normalize-tool-spec imenu-tool)))
+      ;; Check description
+      (should (equal (plist-get normalized :description)
+                     "Navigate and explore a file's structure by listing all its functions, classes, and variables with their locations"))
 
-    ;; Check parameters
-    (let ((params (plist-get (cdr imenu-tool) :parameters)))
-      (should (= (length params) 1))
-      (let ((file-path-param (car params)))
-        (should (equal (plist-get file-path-param :name) "file_path"))
-        (should (equal (plist-get file-path-param :type) "string"))
-        (should (equal (plist-get file-path-param :required) t))
-        (should (equal (plist-get file-path-param :description)
-                       "Path to the file to analyze for symbols"))))))
+      ;; Check args
+      (let ((args (plist-get normalized :args)))
+        (should (= (length args) 1))
+        (let ((file-path-arg (car args)))
+          (should (equal (plist-get file-path-arg :name) "file_path"))
+          (should (eq (plist-get file-path-arg :type) 'string))
+          (should (not (plist-get file-path-arg :optional)))
+          (should (equal (plist-get file-path-arg :description)
+                         "Path to the file to analyze for symbols")))))))
 
 (provide 'claude-code-ide-tests)
 

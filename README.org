@@ -81,7 +81,19 @@ Follow the installation instructions at [[https://docs.anthropic.com/en/docs/cla
 
 ** Installing the Emacs Package
 
-Currently, this package is in early development. To install using =use-package= and [[https://github.com/raxod502/straight.el][straight.el]]:
+Currently, this package is in early development.
+
+To install using =emacs-version= >= 30 and =use-package= with the =vc= binding:
+
+#+begin_src elisp
+(use-package claude-code-ide
+  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
+  :bind ("C-c C-'" . claude-code-ide-menu) ; Set your favorite keybinding
+  :config
+  (claude-code-ide-emacs-tools-setup)) ; Optionally enable Emacs MCP tools
+#+end_src
+
+To install using =use-package= and [[https://github.com/raxod502/straight.el][straight.el]]:
 
 #+begin_src emacs-lisp
 (use-package claude-code-ide
@@ -131,29 +143,32 @@ You can run multiple Claude Code instances simultaneously for different projects
 
 *** Configuration Variables
 
-| Variable                                    | Description                                 | Default                              |
-|---------------------------------------------+---------------------------------------------+--------------------------------------|
-| ~claude-code-ide-cli-path~                    | Path to Claude Code CLI                     | ~"claude"~                             |
-| ~claude-code-ide-buffer-name-function~        | Function for buffer naming                  | ~claude-code-ide--default-buffer-name~ |
-| ~claude-code-ide-cli-debug~                   | Enable CLI debug mode (-d flag)             | ~nil~                                  |
-| ~claude-code-ide-cli-extra-flags~             | Additional CLI flags (e.g. "--model")       | ~""~                                   |
-| ~claude-code-ide-debug~                       | Enable debug logging                        | ~nil~                                  |
-| ~claude-code-ide-terminal-backend~            | Terminal backend (vterm or eat)             | ~'vterm~                               |
-| ~claude-code-ide-log-with-context~            | Include session context in log messages     | ~t~                                    |
-| ~claude-code-ide-debug-buffer~                | Buffer name for debug output                | ~"*claude-code-ide-debug*"~              |
-| ~claude-code-ide-use-side-window~             | Use side window vs regular buffer           | ~t~                                    |
-| ~claude-code-ide-window-side~                 | Side for Claude window                      | ~'right~                               |
-| ~claude-code-ide-window-width~                | Width for side windows (left/right)         | ~90~                                   |
-| ~claude-code-ide-window-height~               | Height for side windows (top/bottom)        | ~20~                                   |
-| ~claude-code-ide-focus-on-open~               | Focus Claude window when opened             | ~t~                                    |
-| ~claude-code-ide-focus-claude-after-ediff~    | Focus Claude window after opening ediff     | ~t~                                    |
-| ~claude-code-ide-show-claude-window-in-ediff~ | Show Claude window during ediff             | ~t~                                    |
-| ~claude-code-ide-system-prompt~               | Custom system prompt to append              | ~nil~                                  |
-| ~claude-code-ide-enable-mcp-server~           | Enable MCP tools server                     | ~nil~                                  |
-| ~claude-code-ide-mcp-server-port~             | Port for MCP tools server                   | ~nil~ (auto-select)                    |
-| ~claude-code-ide-mcp-server-tools~            | Alist of exposed Emacs functions            | ~nil~                                  |
-| ~claude-code-ide-diagnostics-backend~         | Diagnostics backend (auto/flycheck/flymake) | ~'auto~                                |
-| ~claude-code-ide-prevent-reflow-glitch~       | Prevent terminal reflow glitch (bug #1422)  | ~t~                                    |
+| Variable                                      | Description                                 | Default                              |
+|-----------------------------------------------+---------------------------------------------+--------------------------------------|
+| ~claude-code-ide-cli-path~                      | Path to Claude Code CLI                     | ~"claude"~                             |
+| ~claude-code-ide-buffer-name-function~          | Function for buffer naming                  | ~claude-code-ide--default-buffer-name~ |
+| ~claude-code-ide-cli-debug~                     | Enable CLI debug mode (-d flag)             | ~nil~                                  |
+| ~claude-code-ide-cli-extra-flags~               | Additional CLI flags (e.g. "--model")       | ~""~                                   |
+| ~claude-code-ide-debug~                         | Enable debug logging                        | ~nil~                                  |
+| ~claude-code-ide-terminal-backend~              | Terminal backend (vterm or eat)             | ~'vterm~                               |
+| ~claude-code-ide-vterm-anti-flicker~            | Enable vterm flicker reduction              | ~t~                                    |
+| ~claude-code-ide-vterm-render-delay~            | vterm render batching delay (seconds)       | ~0.005~                                |
+| ~claude-code-ide-terminal-initialization-delay~ | Initialization delay for terminals          | ~0.1~                                  |
+| ~claude-code-ide-log-with-context~              | Include session context in log messages     | ~t~                                    |
+| ~claude-code-ide-debug-buffer~                  | Buffer name for debug output                | ~"*claude-code-ide-debug*"~              |
+| ~claude-code-ide-use-side-window~               | Use side window vs regular buffer           | ~t~                                    |
+| ~claude-code-ide-window-side~                   | Side for Claude window                      | ~'right~                               |
+| ~claude-code-ide-window-width~                  | Width for side windows (left/right)         | ~90~                                   |
+| ~claude-code-ide-window-height~                 | Height for side windows (top/bottom)        | ~20~                                   |
+| ~claude-code-ide-focus-on-open~                 | Focus Claude window when opened             | ~t~                                    |
+| ~claude-code-ide-focus-claude-after-ediff~      | Focus Claude window after opening ediff     | ~t~                                    |
+| ~claude-code-ide-show-claude-window-in-ediff~   | Show Claude window during ediff             | ~t~                                    |
+| ~claude-code-ide-system-prompt~                 | Custom system prompt to append              | ~nil~                                  |
+| ~claude-code-ide-enable-mcp-server~             | Enable MCP tools server                     | ~nil~                                  |
+| ~claude-code-ide-mcp-server-port~               | Port for MCP tools server                   | ~nil~ (auto-select)                    |
+| ~claude-code-ide-mcp-server-tools~              | Alist of exposed Emacs functions            | ~nil~                                  |
+| ~claude-code-ide-diagnostics-backend~           | Diagnostics backend (auto/flycheck/flymake) | ~'auto~                                |
+| ~claude-code-ide-prevent-reflow-glitch~         | Prevent terminal reflow glitch (bug #1422)  | ~t~                                    |
 
 *** Side Window Configuration
 
@@ -201,6 +216,34 @@ Claude Code IDE supports both =vterm= and =eat= as terminal backends. By default
 #+end_src
 
 The =eat= backend is a pure Elisp terminal emulator that may work better in some environments where =vterm= compilation is problematic. Both backends provide full terminal functionality including color support and special key handling.
+
+**** vterm Rendering Optimization
+
+Claude Code IDE includes intelligent flicker reduction for vterm terminals to provide smoother visual output:
+
+#+begin_src emacs-lisp
+;; Enable/disable vterm anti-flicker optimization (enabled by default)
+(setq claude-code-ide-vterm-anti-flicker t)
+
+;; Adjust the render delay for batching updates (default is 0.005 seconds)
+(setq claude-code-ide-vterm-render-delay 0.01)  ; Increase for smoother but less responsive
+#+end_src
+
+This optimization detects rapid terminal redraw sequences (like when Claude expands text areas) and batches them for smoother rendering. The 5ms default delay provides optimal visual quality with imperceptible latency.
+
+**** Terminal Initialization Delay
+
+Claude Code IDE includes a brief initialization delay when launching terminals to ensure proper layout rendering:
+
+#+begin_src emacs-lisp
+;; Adjust the terminal initialization delay (default is 0.1 seconds)
+(setq claude-code-ide-terminal-initialization-delay 0.15)
+
+;; Or disable it entirely (may cause visual glitches)
+(setq claude-code-ide-terminal-initialization-delay 0)
+#+end_src
+
+This delay prevents display artifacts such as misaligned prompts and incorrect cursor positioning that can occur when terminal emulation is initializing. The default 100ms delay is imperceptible but ensures reliable terminal startup.
 
 **** Terminal Keybindings
 
@@ -366,24 +409,25 @@ You can expose your own Emacs functions to Claude through the MCP tools system. 
 
 *** Tool Definition Format
 
-Each tool definition in =claude-code-ide-mcp-server-tools= follows this format:
+Define tools using the =claude-code-ide-make-tool= function:
 
 #+begin_src emacs-lisp
-'(function-name
-  :description "Human-readable description for Claude"
-  :parameters ((:name "param1"
-                :type "string"
-                :required t
-                :description "What this parameter does")
-               (:name "param2"
-                :type "number"
-                :required nil
-                :description "Optional parameter")))
+(claude-code-ide-make-tool
+ :function #'function-name     ; The Emacs function to call
+ :name "tool_name"             ; Name for Claude to use (snake_case recommended)
+ :description "..."            ; Human-readable description
+ :args '((:name "param1"       ; List of argument specifications
+          :type string         ; Type: string, number, integer, boolean, etc.
+          :description "..."   ; What this parameter does
+          :optional t)))       ; Optional parameters marked with :optional t
 #+end_src
+
+Available argument types: =string=, =number=, =integer=, =boolean=, =array=, =object=, =null=
 
 *** Context-Aware Tool Example
 
 #+begin_src emacs-lisp
+;; Define a context-aware function that operates in the session's project
 (defun my-project-grep (pattern)
   "Search for PATTERN in the current session's project."
   (claude-code-ide-mcp-server-with-session-context nil
@@ -393,18 +437,28 @@ Each tool definition in =claude-code-ide-mcp-server-tools= follows this format:
                     (format "rg -n '%s' %s" pattern project-dir))))
       results)))
 
-(add-to-list 'claude-code-ide-mcp-server-tools
-             '(my-project-grep
-               :description "Search for pattern in project files"
-               :parameters ((:name "pattern"
-                            :type "string"
-                            :required t
-                            :description "Pattern to search for"))))
+;; Define and register the tool (automatically added to claude-code-ide-mcp-server-tools)
+(claude-code-ide-make-tool
+ :function #'my-project-grep
+ :name "my_project_grep"
+ :description "Search for pattern in project files"
+ :args '((:name "pattern"
+          :type string
+          :description "Pattern to search for")))
+
+;; Enable Emacs tool MCP server
+(claude-code-ide-emacs-tools-setup)
 #+end_src
+
+The =claude-code-ide-mcp-server-with-session-context= macro ensures your tool executes in the correct project context.
 
 * License
 
 This project is licensed under the GNU General Public License v3.0 or later. See the LICENSE file for details.
+
+* Trademark Notice
+
+Claude® is a registered trademark of Anthropic, PBC. Claude Code is an application developed by Anthropic, PBC.
 
 * Related Projects
 
