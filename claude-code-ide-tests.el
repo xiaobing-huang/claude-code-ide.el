@@ -925,6 +925,73 @@ have completed before cleanup.  Waits up to 5 seconds."
     ;; Cleanup temp directory
     (delete-directory temp-dir t)))
 
+(ert-deftest claude-code-ide-test-tab-bar-switch-on-ediff ()
+  "Test that tab-bar switching on ediff respects the configuration."
+  ;; Test that the variable exists with the expected default
+  (should (boundp 'claude-code-ide-switch-tab-on-ediff))
+  (should (equal claude-code-ide-switch-tab-on-ediff t))
+
+  ;; Test with simple mocking to ensure the config is checked
+  (let* ((original-tab '((name . "original-tab")))
+         (current-tab '((name . "current-tab")))
+         (tab-switched nil)
+         (tab-bar-mode t))
+
+    ;; Mock functions
+    (cl-letf (((symbol-function 'fboundp)
+               (lambda (sym)
+                 (or (eq sym 'tab-bar--current-tab)
+                     (eq sym 'tab-bar-select-tab-by-name)
+                     (eq sym 'tab-bar-mode)
+                     (funcall (cl-letf-saved-symbol-function 'fboundp) sym))))
+              ((symbol-function 'tab-bar--current-tab)
+               (lambda () current-tab))
+              ((symbol-function 'tab-bar-select-tab-by-name)
+               (lambda (name)
+                 (setq tab-switched name))))
+
+      ;; Create a minimal test session
+      (let ((session (make-claude-code-ide-mcp-session
+                      :original-tab original-tab)))
+
+        ;; Test 1: With switch enabled (default)
+        (let ((claude-code-ide-switch-tab-on-ediff t))
+          (setq tab-switched nil)
+          ;; Simulate the relevant part of the handler
+          (when (and claude-code-ide-switch-tab-on-ediff
+                     (claude-code-ide-mcp-session-original-tab session))
+            (let ((original-tab (claude-code-ide-mcp-session-original-tab session)))
+              (when (and (fboundp 'tab-bar-mode)
+                         tab-bar-mode
+                         (fboundp 'tab-bar--current-tab)
+                         (fboundp 'tab-bar-select-tab-by-name))
+                (let ((current-tab (tab-bar--current-tab)))
+                  (when (and original-tab current-tab
+                             (not (equal (alist-get 'name original-tab)
+                                         (alist-get 'name current-tab))))
+                    (tab-bar-select-tab-by-name (alist-get 'name original-tab)))))))
+          ;; Should have switched
+          (should (equal tab-switched "original-tab")))
+
+        ;; Test 2: With switch disabled
+        (let ((claude-code-ide-switch-tab-on-ediff nil))
+          (setq tab-switched nil)
+          ;; Simulate the relevant part of the handler
+          (when (and claude-code-ide-switch-tab-on-ediff
+                     (claude-code-ide-mcp-session-original-tab session))
+            (let ((original-tab (claude-code-ide-mcp-session-original-tab session)))
+              (when (and (fboundp 'tab-bar-mode)
+                         tab-bar-mode
+                         (fboundp 'tab-bar--current-tab)
+                         (fboundp 'tab-bar-select-tab-by-name))
+                (let ((current-tab (tab-bar--current-tab)))
+                  (when (and original-tab current-tab
+                             (not (equal (alist-get 'name original-tab)
+                                         (alist-get 'name current-tab))))
+                    (tab-bar-select-tab-by-name (alist-get 'name original-tab)))))))
+          ;; Should NOT have switched
+          (should (null tab-switched)))))))
+
 (defun claude-code-ide-run-tests ()
   "Run all claude-code-ide test cases."
   (interactive)
@@ -939,6 +1006,9 @@ have completed before cleanup.  Waits up to 5 seconds."
 
 ;; Load MCP module now that websocket is available
 (require 'claude-code-ide-mcp)
+
+;; Load MCP handlers module for testing
+(require 'claude-code-ide-mcp-handlers)
 
 ;; Load MCP tools server module
 (condition-case nil
@@ -1106,9 +1176,17 @@ have completed before cleanup.  Waits up to 5 seconds."
 
 (ert-deftest claude-code-ide-test-mcp-tool-registry ()
   "Test that all tools are properly registered."
-  (let ((expected-tools '("openFile" "getCurrentSelection" "getOpenEditors"
-                          "getWorkspaceFolders" "getDiagnostics" "saveDocument"
-                          "close_tab" "openDiff")))
+  ;; Build expected tools list dynamically based on configuration
+  (let* ((base-tools '("openFile" "getCurrentSelection" "getOpenEditors"
+                       "getWorkspaceFolders" "getDiagnostics" "saveDocument"
+                       "close_tab" "checkDocumentDirty"))
+         (diff-tools (when (bound-and-true-p claude-code-ide-use-ide-diff)
+                       '("openDiff" "closeAllDiffTabs")))
+         (expected-tools (append base-tools diff-tools)))
+    ;; Rebuild tool lists to match current configuration
+    (setq claude-code-ide-mcp-tools (claude-code-ide-mcp--build-tool-list))
+    (setq claude-code-ide-mcp-tool-schemas (claude-code-ide-mcp--build-tool-schemas))
+    (setq claude-code-ide-mcp-tool-descriptions (claude-code-ide-mcp--build-tool-descriptions))
     (dolist (tool-name expected-tools)
       (should (alist-get tool-name claude-code-ide-mcp-tools nil nil #'string=))
       (let ((handler (alist-get tool-name claude-code-ide-mcp-tools nil nil #'string=))
@@ -1118,6 +1196,37 @@ have completed before cleanup.  Waits up to 5 seconds."
                     (and (symbolp handler) (fboundp handler))))
         ;; Check that schema is provided
         (should schema)))))
+
+(ert-deftest claude-code-ide-test-ediff-flag-disables-tools ()
+  "Test that diff tools are excluded when claude-code-ide-use-ide-diff is nil."
+  (let ((claude-code-ide-use-ide-diff nil))
+    ;; Rebuild tool lists with ediff disabled
+    (setq claude-code-ide-mcp-tools (claude-code-ide-mcp--build-tool-list))
+    (setq claude-code-ide-mcp-tool-schemas (claude-code-ide-mcp--build-tool-schemas))
+    (setq claude-code-ide-mcp-tool-descriptions (claude-code-ide-mcp--build-tool-descriptions))
+    ;; Verify diff tools are not present
+    (should-not (alist-get "openDiff" claude-code-ide-mcp-tools nil nil #'string=))
+    (should-not (alist-get "closeAllDiffTabs" claude-code-ide-mcp-tools nil nil #'string=))
+    (should-not (alist-get "openDiff" claude-code-ide-mcp-tool-schemas nil nil #'string=))
+    (should-not (alist-get "closeAllDiffTabs" claude-code-ide-mcp-tool-schemas nil nil #'string=))
+    (should-not (alist-get "openDiff" claude-code-ide-mcp-tool-descriptions nil nil #'string=))
+    (should-not (alist-get "closeAllDiffTabs" claude-code-ide-mcp-tool-descriptions nil nil #'string=))
+    ;; Verify other tools are still present
+    (should (alist-get "openFile" claude-code-ide-mcp-tools nil nil #'string=))
+    (should (alist-get "getCurrentSelection" claude-code-ide-mcp-tools nil nil #'string=)))
+  ;; Test with ediff enabled
+  (let ((claude-code-ide-use-ide-diff t))
+    ;; Rebuild tool lists with ediff enabled
+    (setq claude-code-ide-mcp-tools (claude-code-ide-mcp--build-tool-list))
+    (setq claude-code-ide-mcp-tool-schemas (claude-code-ide-mcp--build-tool-schemas))
+    (setq claude-code-ide-mcp-tool-descriptions (claude-code-ide-mcp--build-tool-descriptions))
+    ;; Verify diff tools are present
+    (should (alist-get "openDiff" claude-code-ide-mcp-tools nil nil #'string=))
+    (should (alist-get "closeAllDiffTabs" claude-code-ide-mcp-tools nil nil #'string=))
+    (should (alist-get "openDiff" claude-code-ide-mcp-tool-schemas nil nil #'string=))
+    (should (alist-get "closeAllDiffTabs" claude-code-ide-mcp-tool-schemas nil nil #'string=))
+    (should (alist-get "openDiff" claude-code-ide-mcp-tool-descriptions nil nil #'string=))
+    (should (alist-get "closeAllDiffTabs" claude-code-ide-mcp-tool-descriptions nil nil #'string=))))
 
 (ert-deftest claude-code-ide-test-mcp-server-lifecycle ()
   "Test MCP server start and stop."

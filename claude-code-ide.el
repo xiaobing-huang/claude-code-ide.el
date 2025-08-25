@@ -180,6 +180,22 @@ diff comparison."
   :type 'boolean
   :group 'claude-code-ide)
 
+(defcustom claude-code-ide-use-ide-diff t
+  "Whether to use IDE diff viewer for file differences.
+When non-nil (default), Claude Code will open an IDE diff viewer
+(ediff) when showing file changes.  When nil, Claude Code will
+display diffs in the terminal instead."
+  :type 'boolean
+  :group 'claude-code-ide)
+
+(defcustom claude-code-ide-switch-tab-on-ediff t
+  "Whether to switch back to Claude's original tab when opening ediff.
+When non-nil (default), Claude Code will switch back to the tab
+where Claude Code was started when opening an ediff session.
+When nil, the current tab remains active when ediff is opened."
+  :type 'boolean
+  :group 'claude-code-ide)
+
 (defcustom claude-code-ide-use-side-window t
   "Whether to display Claude Code in a side window.
 When non-nil (default), Claude Code opens in a dedicated side window
@@ -682,7 +698,7 @@ Additional flags from `claude-code-ide-cli-extra-flags' are also included."
     (when continue
       (setq claude-cmd (concat claude-cmd " -c")))
     ;; Add append-system-prompt flag with Emacs context
-    (let ((emacs-prompt "IMPORTANT: Connected to Emacs via claude-code-ide.el integration.\n\nEmacs uses mixed coordinates:\n- Lines: 1-based (line 1 = first line)\n- Columns: 0-based (column 0 = first column)\n\nExample: First character in file is at line 1, column 0.\n\nAvailable: xref (LSP), tree-sitter, imenu, project.el, flycheck/flymake diagnostics.\nContext-aware with automatic project/file/selection tracking.")
+    (let ((emacs-prompt "IMPORTANT: Connected to Emacs via claude-code-ide.el integration. Emacs uses mixed coordinates: Lines: 1-based (line 1 = first line), Columns: 0-based (column 0 = first column). Example: First character in file is at line 1, column 0. Available: xref (LSP), tree-sitter, imenu, project.el, flycheck/flymake diagnostics. Context-aware with automatic project/file/selection tracking.")
           (combined-prompt nil))
       ;; Always include the Emacs-specific prompt
       (setq combined-prompt emacs-prompt)

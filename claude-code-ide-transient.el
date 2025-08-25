@@ -62,6 +62,8 @@
 (defvar claude-code-ide-focus-on-open)
 (defvar claude-code-ide-focus-claude-after-ediff)
 (defvar claude-code-ide-show-claude-window-in-ediff)
+(defvar claude-code-ide-use-ide-diff)
+(defvar claude-code-ide-switch-tab-on-ediff)
 (defvar claude-code-ide-use-side-window)
 (defvar claude-code-ide-cli-debug)
 (defvar claude-code-ide-cli-extra-flags)
@@ -273,6 +275,18 @@ Otherwise, if multiple sessions exist, prompt for selection."
   (setq claude-code-ide-use-side-window (not claude-code-ide-use-side-window))
   (claude-code-ide-log "Use side window %s" (if claude-code-ide-use-side-window "enabled" "disabled")))
 
+(transient-define-suffix claude-code-ide--toggle-use-ide-diff ()
+  "Toggle IDE diff viewer setting."
+  (interactive)
+  (setq claude-code-ide-use-ide-diff (not claude-code-ide-use-ide-diff))
+  (claude-code-ide-log "IDE diff viewer %s" (if claude-code-ide-use-ide-diff "enabled" "disabled")))
+
+(transient-define-suffix claude-code-ide--toggle-switch-tab-on-ediff ()
+  "Toggle tab switching on ediff setting."
+  (interactive)
+  (setq claude-code-ide-switch-tab-on-ediff (not claude-code-ide-switch-tab-on-ediff))
+  (claude-code-ide-log "Switch tab on ediff %s" (if claude-code-ide-switch-tab-on-ediff "enabled" "disabled")))
+
 (transient-define-suffix claude-code-ide--toggle-cli-debug ()
   "Toggle CLI debug mode."
   (interactive)
@@ -288,6 +302,8 @@ Otherwise, if multiple sessions exist, prompt for selection."
   (customize-save-variable 'claude-code-ide-focus-on-open claude-code-ide-focus-on-open)
   (customize-save-variable 'claude-code-ide-focus-claude-after-ediff claude-code-ide-focus-claude-after-ediff)
   (customize-save-variable 'claude-code-ide-show-claude-window-in-ediff claude-code-ide-show-claude-window-in-ediff)
+  (customize-save-variable 'claude-code-ide-use-ide-diff claude-code-ide-use-ide-diff)
+  (customize-save-variable 'claude-code-ide-switch-tab-on-ediff claude-code-ide-switch-tab-on-ediff)
   (customize-save-variable 'claude-code-ide-use-side-window claude-code-ide-use-side-window)
   (customize-save-variable 'claude-code-ide-cli-path claude-code-ide-cli-path)
   (customize-save-variable 'claude-code-ide-cli-extra-flags claude-code-ide-cli-extra-flags)
@@ -336,6 +352,12 @@ Otherwise, if multiple sessions exist, prompt for selection."
     ("E" "Toggle show Claude in ediff" claude-code-ide--toggle-show-claude-in-ediff
      :description (lambda () (format "Show Claude in ediff (%s)"
                                      (if claude-code-ide-show-claude-window-in-ediff "ON" "OFF"))))
+    ("i" "Toggle IDE diff viewer" claude-code-ide--toggle-use-ide-diff
+     :description (lambda () (format "IDE diff viewer (%s)"
+                                     (if claude-code-ide-use-ide-diff "ON" "OFF"))))
+    ("t" "Toggle tab switching on ediff" claude-code-ide--toggle-switch-tab-on-ediff
+     :description (lambda () (format "Tab switch on ediff (%s)"
+                                     (if claude-code-ide-switch-tab-on-ediff "ON" "OFF"))))
     ("u" "Toggle side window" claude-code-ide--toggle-use-side-window
      :description (lambda () (format "Use side window (%s)"
                                      (if claude-code-ide-use-side-window "ON" "OFF"))))]
